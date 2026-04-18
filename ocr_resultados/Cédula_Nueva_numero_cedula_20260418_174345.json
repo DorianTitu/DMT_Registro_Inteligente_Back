@@ -1,0 +1,24 @@
+{
+  "timestamp": "20260418_174345",
+  "tipo_cedula": "C\u00e9dula Nueva",
+  "zona": "numero_cedula",
+  "tratamientos": [
+    "Cargada: (720, 1280, 3)",
+    "Upscale: 3x",
+    "Crop: (100,1400,1000,1800)",
+    "Threshold: 70",
+    "OCR EasyOCR: 0 componentes"
+  ],
+  "ruta_imagen": "./ocr_resultados/C\u00e9dula_Nueva_numero_cedula_20260418_174345.png",
+  "dimensiones": "(400, 900, 3)",
+  "ocr": {
+    "exito": true,
+    "texto_completo": "",
+    "componentes": [],
+    "cantidad_componentes": 0
+  },
+  "numero_cedula_parseado": {
+    "numero": "",
+    "confianza": 0
+  }
+}

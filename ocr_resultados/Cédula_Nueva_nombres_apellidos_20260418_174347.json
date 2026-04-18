@@ -1,0 +1,26 @@
+{
+  "timestamp": "20260418_174347",
+  "tipo_cedula": "C\u00e9dula Nueva",
+  "zona": "nombres_apellidos",
+  "tratamientos": [
+    "Cargada: (720, 1280, 3)",
+    "Upscale: 3x",
+    "Crop: (800,250,1800,900)",
+    "Threshold: 70",
+    "OCR EasyOCR: 0 componentes"
+  ],
+  "ruta_imagen": "./ocr_resultados/C\u00e9dula_Nueva_nombres_apellidos_20260418_174347.png",
+  "dimensiones": "(650, 1000, 3)",
+  "ocr": {
+    "exito": true,
+    "texto_completo": "",
+    "componentes": [],
+    "cantidad_componentes": 0
+  },
+  "nombres_apellidos_parseados": {
+    "apellidos": "",
+    "nombres": "",
+    "confianza_apellidos": 0,
+    "confianza_nombres": 0
+  }
+}
