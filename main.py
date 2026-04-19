@@ -4,6 +4,7 @@ API DVR Dahua 2.0 - Arquitectura de Servicios y Controladores
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import logging
 from datetime import datetime
 
@@ -20,6 +21,21 @@ app = FastAPI(
     title="API DVR Dahua - Sistema de Cámaras",
     description="API para captura de imágenes de 4 cámaras DVR",
     version="2.0.0"
+)
+
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "*"  # Permitir todos durante desarrollo
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(cameras_router)

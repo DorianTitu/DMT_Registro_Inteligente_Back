@@ -78,22 +78,6 @@ async def procesar_cedula_nueva_nombres_apellidos(datos: ImagenBase64):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/cedula-nueva/completa")
-async def procesar_cedula_nueva_completa(datos: ImagenBase64):
-    """Barrido COMPLETO de cédula nueva - extrae TODAS las zonas con OCR (recibe Base64)"""
-    try:
-        logger.info("OCR: Cédula Nueva - BARRIDO COMPLETO")
-        
-        # Decodificar Base64 a bytes
-        imagen_bytes = base64.b64decode(datos.imagen_base64)
-        resultado = servicio_nueva.procesar_cedula_completa(imagen_bytes)
-        
-        return resultado
-    except Exception as e:
-        logger.error(f"Error OCR cédula nueva completa: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.post("/cedula-antigua/numero")
 async def procesar_cedula_antigua_numero(datos: ImagenBase64):
     """Procesa número de cédula - Cédula Antigua (recibe Base64)"""
