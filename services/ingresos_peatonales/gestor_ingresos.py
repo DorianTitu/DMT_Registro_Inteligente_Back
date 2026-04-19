@@ -114,10 +114,10 @@ class GestorIngresosPeatonales:
                 ws = wb.active
                 ws.title = "Registros"
 
-                # Encabezados
+                # Encabezados - FORMATO CORRECTO
                 headers = [
-                    'TICKET', 'NOMBRE', 'APELLIDO', 'CÉDULA',
-                    'DEPARTAMENTO', 'MOTIVO', 'INGRESO', 'SALIDA/ESTADO', 'FECHA_REGISTRO'
+                    'Ticket', 'Fecha de Ingreso', 'Cédula', 'Nombres', 'Apellidos',
+                    'Departamento', 'Motivo', 'Hora entrada', 'Hora salida'
                 ]
                 for col, header in enumerate(headers, 1):
                     ws.cell(row=1, column=col, value=header)
@@ -125,14 +125,14 @@ class GestorIngresosPeatonales:
             # Agregar fila con datos
             next_row = ws.max_row + 1
             ws.cell(row=next_row, column=1, value=datos['ticket'])
-            ws.cell(row=next_row, column=2, value=datos['nombre'])
-            ws.cell(row=next_row, column=3, value=datos['apellido'])
-            ws.cell(row=next_row, column=4, value=datos['numero_cedula'])
-            ws.cell(row=next_row, column=5, value=datos['departamento'])
-            ws.cell(row=next_row, column=6, value=datos['motivo'])
-            ws.cell(row=next_row, column=7, value=datos['hora_entrada'])
-            ws.cell(row=next_row, column=8, value=datos['salida_estado'])  # Vacío
-            ws.cell(row=next_row, column=9, value=datos['fecha_registro'])
+            ws.cell(row=next_row, column=2, value=datos['fecha_ingreso_fmt'])  # Fecha formateada dd/mm/yyyy
+            ws.cell(row=next_row, column=3, value=datos['numero_cedula'])
+            ws.cell(row=next_row, column=4, value=datos['nombre'])
+            ws.cell(row=next_row, column=5, value=datos['apellido'])
+            ws.cell(row=next_row, column=6, value=datos['departamento'])
+            ws.cell(row=next_row, column=7, value=datos['motivo'])
+            ws.cell(row=next_row, column=8, value=datos['hora_entrada'])
+            ws.cell(row=next_row, column=9, value=datos['salida_estado'])  # Vacío
 
             wb.save(excel_path)
             logger.info(f"Excel actualizado: {excel_path}")
@@ -179,7 +179,7 @@ class GestorIngresosPeatonales:
                 'motivo': motivo,
                 'hora_entrada': hora_entrada,
                 'salida_estado': '',  # Vacío al crear
-                'fecha_registro': fecha_ahora.isoformat(),
+                'fecha_ingreso_fmt': fecha_registro_str,  # dd/mm/yyyy
             }
 
             # Actualizar Excel
@@ -251,18 +251,18 @@ class GestorIngresosPeatonales:
 
                 # Buscar fila con el ticket
                 for row in ws.iter_rows(min_row=2, values_only=True):
-                    if row[0] == ticket:  # Columna TICKET
+                    if row[0] == ticket:  # Columna 0: Ticket
                         return {
                             "exito": True,
-                            "ticket": row[0],
-                            "nombre": row[1],
-                            "apellido": row[2],
-                            "numero_cedula": row[3],
-                            "departamento": row[4],
-                            "motivo": row[5],
-                            "hora_entrada": row[6],
-                            "salida_estado": row[7],
-                            "fecha_registro": row[8],
+                            "ticket": row[0],              # Columna 0: Ticket
+                            "fecha_ingreso": row[1],       # Columna 1: Fecha de Ingreso
+                            "numero_cedula": row[2],       # Columna 2: Cédula
+                            "nombres": row[3],             # Columna 3: Nombres
+                            "apellidos": row[4],           # Columna 4: Apellidos
+                            "departamento": row[5],        # Columna 5: Departamento
+                            "motivo": row[6],              # Columna 6: Motivo
+                            "hora_entrada": row[7],        # Columna 7: Hora entrada
+                            "hora_salida": row[8],         # Columna 8: Hora salida
                             "imagen_usuario_base64": usuario_b64,
                             "imagen_cedula_base64": cedula_b64,
                         }
@@ -305,18 +305,18 @@ class GestorIngresosPeatonales:
 
                         # Buscar fila con el ticket
                         for row_idx, row in enumerate(ws.iter_rows(min_row=2, max_row=ws.max_row), start=2):
-                            if row[0].value == ticket:  # Columna TICKET
-                                # Actualizar solo campos permitidos
+                            if row[0].value == ticket:  # Columna 0: Ticket
+                                # Actualizar solo campos permitidos (nuevas posiciones)
                                 if 'numero_cedula' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=4, value=datos_actualizacion['numero_cedula'])
+                                    ws.cell(row=row_idx, column=3, value=datos_actualizacion['numero_cedula'])  # Columna 3: Cédula
                                 if 'nombres' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=2, value=datos_actualizacion['nombres'])
+                                    ws.cell(row=row_idx, column=4, value=datos_actualizacion['nombres'])  # Columna 4: Nombres
                                 if 'apellidos' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=3, value=datos_actualizacion['apellidos'])
+                                    ws.cell(row=row_idx, column=5, value=datos_actualizacion['apellidos'])  # Columna 5: Apellidos
                                 if 'departamento' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=5, value=datos_actualizacion['departamento'])
+                                    ws.cell(row=row_idx, column=6, value=datos_actualizacion['departamento'])  # Columna 6: Departamento
                                 if 'motivo' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=6, value=datos_actualizacion['motivo'])
+                                    ws.cell(row=row_idx, column=7, value=datos_actualizacion['motivo'])  # Columna 7: Motivo
 
                                 # Nota: La fecha (columna 9) NO se modifica
 
