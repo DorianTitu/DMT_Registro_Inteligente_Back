@@ -7,16 +7,16 @@ Define zonas de recorte para número y nombres/apellidos
 # CÉDULA NUEVA - ZONAS DE RECORTE
 # =============================================
 CEDULA_NUEVA = {
-    "zona_numero": (100, 1400, 1000, 1800),              # Inferior Izquierda: número de cédula
-    "zona_nombres_apellidos": (800, 250, 1800, 900)   # Central-Superior: nombres y apellidos
+    "zona_numero": (100, 1400, 1100, 1800),              # Inferior Izquierda: número de cédula
+    "zona_nombres_apellidos": (1000, 250, 1850, 900)   # Central-Superior: nombres y apellidos
 }
 
 # =============================================
 # CÉDULA ANTIGUA - ZONAS DE RECORTE
 # =============================================
 CEDULA_ANTIGUA = {
-    "zona_numero": (0, 2000, 0, 2000),              # Inferior Izquierda
-    "zona_nombres_apellidos": (0, 2000, 0, 2000)   # Central-Superior
+    "zona_numero": (2000, 350, 3000, 800),              # Inferior Izquierda: número de cédula
+    "zona_nombres_apellidos": (1000, 400, 1850, 1000)    # Central-Superior
 }
 
 # =============================================

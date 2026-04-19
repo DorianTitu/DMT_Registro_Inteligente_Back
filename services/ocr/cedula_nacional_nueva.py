@@ -11,7 +11,7 @@ class CedulaNacionalNuevaOCR(BaseCedulaNacionalOCR):
     def _parsear_nombres_apellidos(self, componentes_ocr):
         """
         Parsea componentes OCR para extraer APELLIDOS y NOMBRES
-        Regla: Todo ANTES de 'NOMBRES' (sin etiquetas) = apellidos
+        Regla: SOLO LAS ÚLTIMAS 2 PALABRAS ANTES de 'NOMBRES' = apellidos
                SOLO el primer componente DESPUÉS de 'NOMBRES' = nombres
         """
         if not componentes_ocr:
@@ -36,15 +36,18 @@ class CedulaNacionalNuevaOCR(BaseCedulaNacionalOCR):
             }
         
         # Palavras a ignorar (etiquetas y ruido)
-        palabras_ignorar = ["APELLIDOS", "CONC", "NACIONALIDAD", "1CJiJ | n", ""]
+        palabras_ignorar = ["APELLIDOS", "CONC", "NACIONALIDAD", "1CJiJ | n", "VC", ""]
         
-        # Recolectar apellidos (antes de NOMBRES, sin etiquetas)
-        apellidos_componentes = []
+        # Recolectar componentes válidos ANTES de NOMBRES (sin etiquetas)
+        componentes_validos_antes = []
         for comp in componentes_ocr[:indice_nombres]:
             texto = comp.get("texto", "").upper().strip()
             # Ignorar etiquetas y ruido
             if texto and texto not in palabras_ignorar and comp.get("confianza", 0) > 0.3:
-                apellidos_componentes.append(comp)
+                componentes_validos_antes.append(comp)
+        
+        # Tomar SOLO LAS ÚLTIMAS 2 PALABRAS válidas antes de NOMBRES
+        apellidos_componentes = componentes_validos_antes[-2:] if len(componentes_validos_antes) >= 2 else componentes_validos_antes
         
         # Recolectar SOLO EL PRIMER NOMBRE (después de NOMBRES)
         nombres_componentes = []
@@ -98,7 +101,7 @@ class CedulaNacionalNuevaOCR(BaseCedulaNacionalOCR):
         }
     
     def procesar_numero_cedula(self, imagen_bytes: bytes):
-        """Procesa zona del número de cédula CON OCR - retorna solo 10 dígitos"""
+        """Procesa zona del número de cédula CON OCR - retorna solo 10 dígitos - NO guarda archivos"""
         resultado = self.procesar_zona_con_ocr(imagen_bytes, CEDULA_NUEVA["zona_numero"])
         
         if resultado.get("exito"):
@@ -109,19 +112,8 @@ class CedulaNacionalNuevaOCR(BaseCedulaNacionalOCR):
             # Parsear número de cédula (extrae solo 10 dígitos, ignora NUI)
             numero_parseado = self._extraer_numero_cedula(texto_ocr, confianza_ocr)
             
-            # Agregar al resultado
+            # Agregar al resultado (SIN guardar imagen ni JSON)
             resultado["numero_cedula_parseado"] = numero_parseado
-            
-            guardado = self.guardar_resultado(
-                resultado["imagen_procesada"],
-                "numero_cedula",
-                {
-                    "dimensiones": str(resultado["dimensiones"]),
-                    "ocr": resultado.get("ocr"),
-                    "numero_cedula_parseado": numero_parseado
-                }
-            )
-            resultado["guardado"] = guardado
         
         return resultado
     
@@ -133,7 +125,7 @@ class CedulaNacionalNuevaOCR(BaseCedulaNacionalOCR):
         return sum(confianzas) / len(confianzas) if confianzas else 0.0
     
     def procesar_nombres_apellidos(self, imagen_bytes: bytes):
-        """Procesa zona de nombres y apellidos CON OCR Y PARSING"""
+        """Procesa zona de nombres y apellidos CON OCR Y PARSING - SÍ guarda imagen y JSON"""
         resultado = self.procesar_zona_con_ocr(imagen_bytes, CEDULA_NUEVA["zona_nombres_apellidos"])
         
         if resultado.get("exito"):
@@ -146,6 +138,7 @@ class CedulaNacionalNuevaOCR(BaseCedulaNacionalOCR):
             # Agregar datos parseados al resultado
             resultado["nombres_apellidos_parseados"] = parsed
             
+            # Guardar imagen procesada y metadatos JSON
             guardado = self.guardar_resultado(
                 resultado["imagen_procesada"],
                 "nombres_apellidos",

@@ -132,7 +132,7 @@ class BaseCedulaNacionalOCR:
         
         img = self._upscale(img)
         img = self._crop_zona(img, zona)
-        img = self._threshold_suave(img, valor=70)
+        img = self._threshold_suave(img, valor=110)
         
         # Guardar imagen procesada en bytes
         buffer = io.BytesIO()
