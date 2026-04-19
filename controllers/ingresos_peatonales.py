@@ -162,3 +162,42 @@ async def actualizar_ingreso_peatonal(ticket: str, datos: ActualizarIngresoReque
     except Exception as e:
         logger.error(f"Error en actualizar_ingreso_peatonal: {e}")
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+@router.get("/listar/dia")
+async def listar_ingresos_por_dia(fecha: str):
+    """
+    Lista todos los tickets de un día específico
+    
+    Parámetro query:
+    - fecha: DD/MM/YYYY o YYYY-MM-DD
+    
+    Retorna:
+    - Lista de todos los registros del día (SIN imágenes Base64)
+    - Incluye: ticket, cédula, nombres, apellidos, departamento, motivo, horas
+    - Total de registros del día
+    
+    Ejemplos:
+    - GET /ingresos-peatonal/listar/dia?fecha=19/04/2026
+    - GET /ingresos-peatonal/listar/dia?fecha=2026-04-19
+    """
+    try:
+        logger.info(f"Listando ingresos para fecha: {fecha}")
+
+        resultado = gestor.listar_ingresos_por_dia(fecha)
+
+        if "error" in resultado:
+            raise HTTPException(status_code=400, detail=resultado["error"])
+
+        return {
+            "exito": True,
+            "fecha": resultado["fecha"],
+            "cantidad_tickets": resultado["cantidad_tickets"],
+            "tickets": resultado["tickets"],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en listar_ingresos_por_dia: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")

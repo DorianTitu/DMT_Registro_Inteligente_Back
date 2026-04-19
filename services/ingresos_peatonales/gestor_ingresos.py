@@ -73,6 +73,29 @@ class GestorIngresosPeatonales:
 
         return ticket_path
 
+    def _validar_base64_imagen(self, imagen_base64: str, nombre_imagen: str) -> tuple[bool, str]:
+        """
+        Valida que el string sea un base64 válido decodificable.
+        Retorna (válido, mensaje_error)
+        """
+        try:
+            if not imagen_base64:
+                return False, f"{nombre_imagen} no puede estar vacía"
+            
+            # Intentar decodificar
+            decoded = base64.b64decode(imagen_base64)
+            
+            if len(decoded) == 0:
+                return False, f"{nombre_imagen} decodificada está vacía"
+            
+            # Verificar que sea una imagen JPEG válida (empieza con FFD8)
+            if not decoded.startswith(b'\xff\xd8'):
+                return False, f"{nombre_imagen} no es una imagen JPEG válida"
+            
+            return True, ""
+        except Exception as e:
+            return False, f"Error decodificando {nombre_imagen}: {str(e)}"
+
     def _guardar_imagenes(self, ticket_path: Path, imagen_usuario_base64: str, imagen_cedula_base64: str) -> bool:
         """Guarda imágenes en formato JPEG"""
         try:
@@ -153,9 +176,37 @@ class GestorIngresosPeatonales:
         imagen_cedula_base64: str,
     ) -> dict:
         """
-        Crea un nuevo registro de ingreso peatonal
+        Crea un nuevo registro de ingreso peatonal.
+        PATRÓN TRANSACCIONAL: Valida TODO primero, solo crea si todo es válido.
         """
         try:
+            # ===== FASE 1: VALIDACIÓN (Sin cambios en el sistema) =====
+            
+            # Validar datos básicos
+            if not numero_cedula or not str(numero_cedula).strip():
+                return {"error": "Cédula es requerida"}
+            if not nombres or not str(nombres).strip():
+                return {"error": "Nombres son requeridos"}
+            if not apellidos or not str(apellidos).strip():
+                return {"error": "Apellidos son requeridos"}
+            if not hora_entrada or not str(hora_entrada).strip():
+                return {"error": "Hora de entrada es requerida"}
+            if not departamento or not str(departamento).strip():
+                return {"error": "Departamento es requerido"}
+            if not motivo or not str(motivo).strip():
+                return {"error": "Motivo es requerido"}
+
+            # Validar imágenes
+            valido_usuario, msg_usuario = self._validar_base64_imagen(imagen_usuario_base64, "Imagen de usuario")
+            if not valido_usuario:
+                return {"error": msg_usuario}
+
+            valido_cedula, msg_cedula = self._validar_base64_imagen(imagen_cedula_base64, "Imagen de cédula")
+            if not valido_cedula:
+                return {"error": msg_cedula}
+
+            # ===== FASE 2: EJECUCIÓN (Solo si validación pasó) =====
+            
             fecha_ahora = datetime.now()
 
             # Generar ticket
@@ -243,7 +294,12 @@ class GestorIngresosPeatonales:
                 cedula_b64 = base64.b64encode(cedula_path.read_bytes()).decode('utf-8')
 
             # Leer datos del Excel del mes
-            excel_path = mes_path / f"Registros_{mes_path.name}_{ticket_path.parent.parent.name}.xlsx"
+            # mes_path es como: /...../2026/Abril
+            año = mes_path.parent.name  # "2026"
+            mes_nombre = mes_path.name   # "Abril"
+            excel_path = mes_path / f"Registros_{mes_nombre}_{año}.xlsx"
+
+            logger.info(f"Buscando Excel en: {excel_path}")
 
             if excel_path.exists():
                 wb = load_workbook(excel_path)
@@ -266,6 +322,10 @@ class GestorIngresosPeatonales:
                             "imagen_usuario_base64": usuario_b64,
                             "imagen_cedula_base64": cedula_b64,
                         }
+                
+                logger.warning(f"Ticket {ticket} no encontrado en Excel {excel_path}")
+            else:
+                logger.warning(f"Excel no encontrado en: {excel_path}")
 
             # Si no se encontró en Excel, retornar datos básicos
             return {
@@ -328,4 +388,79 @@ class GestorIngresosPeatonales:
 
         except Exception as e:
             logger.error(f"Error actualizando ingreso: {e}")
+            return {"error": str(e)}
+
+    def listar_ingresos_por_dia(self, fecha_str: str) -> dict:
+        """
+        Lista todos los tickets de un día específico
+        fecha_str: formato DD/MM/YYYY o YYYY-MM-DD
+        Retorna: lista de registros del día (sin imágenes Base64)
+        """
+        try:
+            # Parsear fecha
+            try:
+                if '/' in fecha_str:
+                    fecha = datetime.strptime(fecha_str, "%d/%m/%Y")
+                else:
+                    fecha = datetime.strptime(fecha_str, "%Y-%m-%d")
+            except ValueError:
+                return {"error": "Formato fecha inválido. Use DD/MM/YYYY o YYYY-MM-DD"}
+
+            año = fecha.year
+            mes_num = fecha.month
+            día = fecha.day
+
+            nombre_mes, _ = MESES[mes_num]
+
+            # Ruta al Excel del mes
+            mes_path = self.base_path / str(año) / nombre_mes
+            excel_path = mes_path / f"Registros_{nombre_mes}_{año}.xlsx"
+
+            if not excel_path.exists():
+                return {
+                    "exito": True,
+                    "fecha": fecha_str,
+                    "cantidad_tickets": 0,
+                    "tickets": []
+                }
+
+            # Abrir Excel y filtrar por día
+            wb = load_workbook(excel_path)
+            ws = wb.active
+
+            tickets_día = []
+
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0] is None:  # Saltar filas vacías
+                    continue
+
+                # row[1] es la fecha en formato dd/mm/yyyy
+                try:
+                    if row[1]:
+                        fecha_fila = datetime.strptime(str(row[1]), "%d/%m/%Y")
+                        if fecha_fila.day == día and fecha_fila.month == mes_num and fecha_fila.year == año:
+                            tickets_día.append({
+                                "ticket": row[0],              # Columna 0: Ticket
+                                "fecha_ingreso": row[1],       # Columna 1: Fecha de Ingreso
+                                "numero_cedula": row[2],       # Columna 2: Cédula
+                                "nombres": row[3],             # Columna 3: Nombres
+                                "apellidos": row[4],           # Columna 4: Apellidos
+                                "departamento": row[5],        # Columna 5: Departamento
+                                "motivo": row[6],              # Columna 6: Motivo
+                                "hora_entrada": row[7],        # Columna 7: Hora entrada
+                                "hora_salida": row[8],         # Columna 8: Hora salida
+                            })
+                except Exception as e:
+                    logger.warning(f"Error procesando fila con ticket {row[0]}: {e}")
+                    continue
+
+            return {
+                "exito": True,
+                "fecha": fecha_str,
+                "cantidad_tickets": len(tickets_día),
+                "tickets": tickets_día
+            }
+
+        except Exception as e:
+            logger.error(f"Error listando ingresos por día: {e}")
             return {"error": str(e)}
