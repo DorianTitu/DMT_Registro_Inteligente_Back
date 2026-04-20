@@ -8,6 +8,7 @@ from services.captura.peatonal_usuario import CamaraPeatonalUsuario
 from services.captura.peatonal_cedula import CamaraPeatonalCedula
 from services.captura.vehicular_usuario import CamaraVehicularUsuario
 from services.captura.vehicular_cedula import CamaraVehicularCedula
+from services.captura.vehicular_placa import CamaraVehicularPlaca
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ servicio_peatonal_usuario = CamaraPeatonalUsuario()
 servicio_peatonal_cedula = CamaraPeatonalCedula()
 servicio_vehicular_usuario = CamaraVehicularUsuario()
 servicio_vehicular_cedula = CamaraVehicularCedula()
+servicio_vehicular_placa = CamaraVehicularPlaca()
 
 
 @router.get("/peatonal-usuario/imagen")
@@ -138,4 +140,34 @@ async def obtener_imagen_vehicular_cedula(aplicar_crop: bool = True):
         raise e
     except Exception as e:
         logger.error(f"Error en endpoint vehicular_cedula: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/vehicular-placa/imagen")
+async def obtener_imagen_vehicular_placa():
+    """Obtiene imagen de Placa Vehicular (HTTP Digest) en Base64 - SIN RECORTE"""
+    try:
+        logger.info("Imagen: Cámara Vehicular Placa")
+        
+        imagen_bytes = servicio_vehicular_placa.obtener_imagen()
+        
+        if imagen_bytes is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Error al capturar imagen de Placa Vehicular"
+            )
+        
+        imagen_base64 = base64.b64encode(imagen_bytes).decode()
+        
+        return {
+            "exito": True,
+            "canal": "Vehicular Placa",
+            "tipo": "image/jpeg",
+            "imagen_base64": imagen_base64
+        }
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error en endpoint vehicular_placa: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

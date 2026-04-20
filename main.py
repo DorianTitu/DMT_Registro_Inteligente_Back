@@ -11,6 +11,7 @@ from datetime import datetime
 from controllers.cameras import router as cameras_router
 from controllers.ocr import router as ocr_router
 from controllers.ingresos_peatonales import router as ingresos_peatonales_router
+from controllers.ingresos_vehiculares import router as ingresos_vehiculares_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +43,7 @@ app.add_middleware(
 app.include_router(cameras_router)
 app.include_router(ocr_router)
 app.include_router(ingresos_peatonales_router)
+app.include_router(ingresos_vehiculares_router)
 
 
 

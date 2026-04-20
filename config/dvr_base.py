@@ -52,6 +52,24 @@ CANALES = {
     }
 }
 
+# ============================================
+# CONFIGURACIÓN CÁMARAS HTTP EXTERNAS
+# ============================================
+
+CAMARA_HTTP_CONFIG = {
+    "vehicular_placa": {
+        "ip": "192.168.1.2",
+        "usuario": "admin",
+        "contraseña": "DMT_1990",
+        "endpoint": "/cgi-bin/snapshot.cgi",
+        "protocolo": "HTTP",
+        "autenticacion": "Digest",
+        "descripcion": "Captura de placa entrada vehicular",
+        "timeout": 10,
+        "nombre": "Cámara Vehicular Placa"
+    }
+}
+
 CROP_CONFIG = {
     3: {  # Canal Peatonal Cédula
         "vertices": {
