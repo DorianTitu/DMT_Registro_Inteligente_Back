@@ -25,7 +25,6 @@ class CrearIngresoVehicularRequest(BaseModel):
     numero_cedula: str = Field(..., description="10 dígitos de cédula")
     nombres: str = Field(..., description="Nombres completos")
     apellidos: str = Field(..., description="Apellidos")
-    placa: str = Field(..., description="Placa del vehículo")
     hora_entrada: str = Field(..., description="Hora de entrada HH:MM:SS")
     departamento: str = Field(..., description="Departamento/área de destino")
     motivo: str = Field(..., description="Motivo del ingreso")
@@ -39,7 +38,6 @@ class ActualizarIngresoVehicularRequest(BaseModel):
     numero_cedula: Optional[str] = Field(None, description="10 dígitos de cédula")
     nombres: Optional[str] = Field(None, description="Nombres completos")
     apellidos: Optional[str] = Field(None, description="Apellidos")
-    placa: Optional[str] = Field(None, description="Placa del vehículo")
     departamento: Optional[str] = Field(None, description="Departamento/área")
     motivo: Optional[str] = Field(None, description="Motivo del ingreso")
 
@@ -55,19 +53,19 @@ async def crear_ingreso_vehicular(datos: CrearIngresoVehicularRequest):
     
     - Genera ticket automático: TICKET-[MES]-[DÍA]-[NÚMERO]
     - Guarda 3 imágenes (usuario.jpeg, cedula.jpeg, placa.jpeg)
+    - Placa se guarda SOLO como imagen, no como parámetro en Excel
     - Crea carpeta del día si no existe
-    - Actualiza Excel mensual con placa
+    - Actualiza Excel mensual con datos personales
     
     Retorna: ticket generado y fecha de registro
     """
     try:
-        logger.info(f"Creando ingreso vehicular para cédula: {datos.numero_cedula}, placa: {datos.placa}")
+        logger.info(f"Creando ingreso vehicular para cédula: {datos.numero_cedula}")
 
         resultado = gestor.crear_ingreso(
             numero_cedula=datos.numero_cedula,
             nombres=datos.nombres,
             apellidos=datos.apellidos,
-            placa=datos.placa,
             hora_entrada=datos.hora_entrada,
             departamento=datos.departamento,
             motivo=datos.motivo,
@@ -101,9 +99,10 @@ async def leer_ingreso_vehicular(ticket: str):
     
     Retorna:
     - Todos los datos del registro
-    - TICKET, NOMBRE, APELLIDO, CÉDULA, PLACA, DEPARTAMENTO, MOTIVO
+    - TICKET, NOMBRE, APELLIDO, CÉDULA, DEPARTAMENTO, MOTIVO
     - INGRESO, SALIDA/ESTADO, FECHA_REGISTRO
     - 3 Imágenes en Base64 (usuario.jpeg, cedula.jpeg, placa.jpeg)
+    - Nota: Placa se guarda SOLO como imagen, no como parámetro en datos
     """
     try:
         logger.info(f"Leyendo ingreso vehicular con ticket: {ticket}")
@@ -134,13 +133,13 @@ async def actualizar_ingreso_vehicular(ticket: str, datos: ActualizarIngresoVehi
     - numero_cedula
     - nombres
     - apellidos
-    - placa
     - departamento
     - motivo
     
     Campos NO editables (inmutables):
     - TICKET
     - FECHA_REGISTRO (fecha de creación)
+    - Placa (solo se guarda como imagen, no como parámetro)
     
     Las imágenes NO se pueden editar
     """

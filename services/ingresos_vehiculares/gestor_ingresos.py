@@ -1,6 +1,5 @@
 """
 Gestor de Ingresos Vehiculares - Create, Read, Update
-Estructuralmente idéntico a ingresos peatonales pero con 3 imágenes: usuario, cedula, placa
 """
 
 import logging
@@ -144,10 +143,10 @@ class GestorIngresosVehiculares:
                 ws = wb.active
                 ws.title = "Registros"
 
-                # Encabezados - FORMATO CORRECTO (10 columnas)
+                # Encabezados - FORMATO CORRECTO (9 columnas - sin placa)
                 headers = [
                     'Ticket', 'Fecha de Ingreso', 'Cédula', 'Nombres', 'Apellidos',
-                    'Placa', 'Departamento', 'Motivo', 'Hora entrada', 'Hora salida'
+                    'Departamento', 'Motivo', 'Hora entrada', 'Hora salida'
                 ]
                 for col, header in enumerate(headers, 1):
                     ws.cell(row=1, column=col, value=header)
@@ -159,11 +158,10 @@ class GestorIngresosVehiculares:
             ws.cell(row=next_row, column=3, value=datos['numero_cedula'])
             ws.cell(row=next_row, column=4, value=datos['nombre'])
             ws.cell(row=next_row, column=5, value=datos['apellido'])
-            ws.cell(row=next_row, column=6, value=datos['placa'])
-            ws.cell(row=next_row, column=7, value=datos['departamento'])
-            ws.cell(row=next_row, column=8, value=datos['motivo'])
-            ws.cell(row=next_row, column=9, value=datos['hora_entrada'])
-            ws.cell(row=next_row, column=10, value=datos['salida_estado'])  # Vacío
+            ws.cell(row=next_row, column=6, value=datos['departamento'])
+            ws.cell(row=next_row, column=7, value=datos['motivo'])
+            ws.cell(row=next_row, column=8, value=datos['hora_entrada'])
+            ws.cell(row=next_row, column=9, value=datos['salida_estado'])  # Vacío
 
             wb.save(excel_path)
             logger.info(f"Excel actualizado: {excel_path}")
@@ -177,7 +175,6 @@ class GestorIngresosVehiculares:
         numero_cedula: str,
         nombres: str,
         apellidos: str,
-        placa: str,
         hora_entrada: str,
         departamento: str,
         motivo: str,
@@ -199,8 +196,6 @@ class GestorIngresosVehiculares:
                 return {"error": "Nombres son requeridos"}
             if not apellidos or not str(apellidos).strip():
                 return {"error": "Apellidos son requeridos"}
-            if not placa or not str(placa).strip():
-                return {"error": "Placa es requerida"}
             if not hora_entrada or not str(hora_entrada).strip():
                 return {"error": "Hora de entrada es requerida"}
             if not departamento or not str(departamento).strip():
@@ -242,7 +237,6 @@ class GestorIngresosVehiculares:
                 'nombre': nombres,
                 'apellido': apellidos,
                 'numero_cedula': numero_cedula,
-                'placa': placa,
                 'departamento': departamento,
                 'motivo': motivo,
                 'hora_entrada': hora_entrada,
@@ -336,11 +330,10 @@ class GestorIngresosVehiculares:
                             "numero_cedula": row[2],       # Columna 2: Cédula
                             "nombres": row[3],             # Columna 3: Nombres
                             "apellidos": row[4],           # Columna 4: Apellidos
-                            "placa": row[5],               # Columna 5: Placa
-                            "departamento": row[6],        # Columna 6: Departamento
-                            "motivo": row[7],              # Columna 7: Motivo
-                            "hora_entrada": row[8],        # Columna 8: Hora entrada
-                            "hora_salida": row[9],         # Columna 9: Hora salida
+                            "departamento": row[5],        # Columna 5: Departamento
+                            "motivo": row[6],              # Columna 6: Motivo
+                            "hora_entrada": row[7],        # Columna 7: Hora entrada
+                            "hora_salida": row[8],         # Columna 8: Hora salida
                             "imagen_usuario_base64": usuario_b64,
                             "imagen_cedula_base64": cedula_b64,
                             "imagen_placa_base64": placa_b64,
@@ -367,8 +360,8 @@ class GestorIngresosVehiculares:
     def actualizar_ingreso(self, ticket: str, datos_actualizacion: dict) -> dict:
         """
         Actualiza un registro de ingreso (solo ciertos campos)
-        Campos permitidos: numero_cedula, nombres, apellidos, placa, departamento, motivo
-        La fecha NO se modifica
+        Campos permitidos: numero_cedula, nombres, apellidos, departamento, motivo
+        La fecha NO se modifica. La placa solo se guarda como imagen, no se edita.
         """
         try:
             # Buscar el Excel que contiene el ticket
@@ -387,7 +380,7 @@ class GestorIngresosVehiculares:
                         wb = load_workbook(excel_path)
                         ws = wb.active
 
-                        # Buscar fila con el ticket (10 columnas)
+                        # Buscar fila con el ticket (9 columnas)
                         for row_idx, row in enumerate(ws.iter_rows(min_row=2, max_row=ws.max_row), start=2):
                             if row[0].value == ticket:  # Columna 0: Ticket
                                 # Actualizar solo campos permitidos
@@ -397,12 +390,10 @@ class GestorIngresosVehiculares:
                                     ws.cell(row=row_idx, column=4, value=datos_actualizacion['nombres'])  # Columna 4: Nombres
                                 if 'apellidos' in datos_actualizacion:
                                     ws.cell(row=row_idx, column=5, value=datos_actualizacion['apellidos'])  # Columna 5: Apellidos
-                                if 'placa' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=6, value=datos_actualizacion['placa'])  # Columna 6: Placa
                                 if 'departamento' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=7, value=datos_actualizacion['departamento'])  # Columna 7: Departamento
+                                    ws.cell(row=row_idx, column=6, value=datos_actualizacion['departamento'])  # Columna 6: Departamento
                                 if 'motivo' in datos_actualizacion:
-                                    ws.cell(row=row_idx, column=8, value=datos_actualizacion['motivo'])  # Columna 8: Motivo
+                                    ws.cell(row=row_idx, column=7, value=datos_actualizacion['motivo'])  # Columna 7: Motivo
 
                                 wb.save(excel_path)
                                 logger.info(f"Ticket {ticket} actualizado")
@@ -469,11 +460,10 @@ class GestorIngresosVehiculares:
                                 "numero_cedula": row[2],       # Columna 2: Cédula
                                 "nombres": row[3],             # Columna 3: Nombres
                                 "apellidos": row[4],           # Columna 4: Apellidos
-                                "placa": row[5],               # Columna 5: Placa
-                                "departamento": row[6],        # Columna 6: Departamento
-                                "motivo": row[7],              # Columna 7: Motivo
-                                "hora_entrada": row[8],        # Columna 8: Hora entrada
-                                "hora_salida": row[9],         # Columna 9: Hora salida
+                                "departamento": row[5],        # Columna 5: Departamento
+                                "motivo": row[6],              # Columna 6: Motivo
+                                "hora_entrada": row[7],        # Columna 7: Hora entrada
+                                "hora_salida": row[8],         # Columna 8: Hora salida
                             })
                 except Exception as e:
                     logger.warning(f"Error procesando fila con ticket {row[0]}: {e}")
