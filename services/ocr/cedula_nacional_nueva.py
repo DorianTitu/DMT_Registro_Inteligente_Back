@@ -10,7 +10,8 @@ VARIACIONES_NOMBRES = [
     "MOMBRES",      # M por N (muy común en OCR)
     "NOMARES",      # Confusión de B con A
     "NOMBFES",      # F por R
-    "NQMBRES",      # Q en lugar de U
+    "NQMBRES",
+    "NOMORES",     # Q en lugar de U
 ]
 
 
