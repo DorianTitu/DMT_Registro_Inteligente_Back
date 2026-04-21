@@ -9,6 +9,11 @@ import json
 from datetime import datetime
 import easyocr
 
+# Compatibilidad: Pillow 10.0.0+ removió Image.ANTIALIAS
+# Agregar atributo si no existe para que EasyOCR y otras libs funcionen
+if not hasattr(Image, 'ANTIALIAS'):
+    Image.ANTIALIAS = Image.Resampling.LANCZOS
+
 from config.ocr_cedula_config import OCR_CONFIG
 
 logger = logging.getLogger(__name__)

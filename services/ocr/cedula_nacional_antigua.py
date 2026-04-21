@@ -1,13 +1,30 @@
-from config.ocr_cedula_config import CEDULA_ANTIGUA
+from config.ocr_cedula_config import OCR_ZONAS
 from services.ocr.base import BaseCedulaNacionalOCR
 import re
+
+
+# ====================================================
+# VARIACIONES DE ETIQUETAS NOMBRES (Falsos negativos OCR)
+# ====================================================
+VARIACIONES_NOMBRES = [
+    "NOMBRES",      # Correcto
+    "MOMBRES",      # M por N (muy común en OCR)
+    "NOMARES",      # Confusión de B con A
+    "NOMBFES",      # F por R
+    "NQMBRES",      # Q en lugar de U
+]
 
 
 class CedulaNacionalAntiguaOCR(BaseCedulaNacionalOCR):
     """OCR para cédulas antiguas de Ecuador - Lógica propia"""
     
-    def __init__(self):
+    def __init__(self, tipo_camara: str = "peatonal"):
+        """
+        tipo_camara: "peatonal" o "vehicular"
+        """
         super().__init__("Cédula Antigua")
+        self.tipo_camara = tipo_camara
+        self.zonas = OCR_ZONAS[tipo_camara]["antigua"]
     
     def _extraer_numero_cedula_antigua(self, componentes_ocr):
         """
@@ -40,47 +57,48 @@ class CedulaNacionalAntiguaOCR(BaseCedulaNacionalOCR):
     def _parsear_nombres_apellidos_antigua(self, componentes_ocr):
         """
         Parsea nombres y apellidos de cédula antigua
-        Busca etiqueta "APELLIDOS Y NOMBRES"
-        Siguiente componente = apellidos
-        Componente después = nombres
+        Regla: Busca "NOMBRES" 
+               Lo que está ARRIBA (últimas 2 palabras) = APELLIDOS
+               Lo que está ABAJO (primer componente) = NOMBRES
         """
         if not componentes_ocr:
             return {"apellidos": "", "nombres": "", "confianza_apellidos": 0, "confianza_nombres": 0}
         
-        # Buscar índice de la etiqueta "APELLIDOS Y NOMBRES"
-        indice_etiqueta = None
+        # Buscar índice de "NOMBRES" (buscando variaciones)
+        indice_nombres = None
         for idx, comp in enumerate(componentes_ocr):
             texto = comp.get("texto", "").upper().strip()
-            if "APELLIDOS Y NOMBRES" in texto or "APELLIDOS" in texto:
-                indice_etiqueta = idx
+            if texto in VARIACIONES_NOMBRES:
+                indice_nombres = idx
                 break
         
-        # Si no encuentra etiqueta, retornar vacío
-        if indice_etiqueta is None:
+        # Si no encuentra "NOMBRES", retornar vacío
+        if indice_nombres is None:
             return {"apellidos": "", "nombres": "", "confianza_apellidos": 0, "confianza_nombres": 0}
         
-        # El siguiente componente es APELLIDOS
-        apellidos_componente = None
-        apellidos_confianza = 0
-        if indice_etiqueta + 1 < len(componentes_ocr):
-            apellidos_componente = componentes_ocr[indice_etiqueta + 1]
-            apellidos_confianza = apellidos_componente.get("confianza", 0)
+        # Tomar los 2 componentes DIRECTAMENTE ANTES de "NOMBRES" = APELLIDOS
+        apellidos_componentes = []
+        if indice_nombres >= 2:
+            apellidos_componentes = componentes_ocr[indice_nombres - 2:indice_nombres]
+        elif indice_nombres == 1:
+            apellidos_componentes = componentes_ocr[indice_nombres - 1:indice_nombres]
         
-        # El componente después es NOMBRES
-        nombres_componente = None
-        nombres_confianza = 0
-        if indice_etiqueta + 2 < len(componentes_ocr):
-            nombres_componente = componentes_ocr[indice_etiqueta + 2]
-            nombres_confianza = nombres_componente.get("confianza", 0)
+        # Tomar el primer componente DIRECTAMENTE DESPUÉS de "NOMBRES" = NOMBRES
+        nombres_componentes = []
+        if indice_nombres + 1 < len(componentes_ocr):
+            nombres_componentes = [componentes_ocr[indice_nombres + 1]]
         
-        apellidos = apellidos_componente.get("texto", "").strip() if apellidos_componente else ""
-        nombres = nombres_componente.get("texto", "").strip() if nombres_componente else ""
+        apellidos = " ".join([c.get("texto", "").strip() for c in apellidos_componentes])
+        nombres = " ".join([c.get("texto", "").strip() for c in nombres_componentes])
+        
+        confianza_apellidos = sum([c.get("confianza", 0) for c in apellidos_componentes]) / len(apellidos_componentes) if apellidos_componentes else 0
+        confianza_nombres = sum([c.get("confianza", 0) for c in nombres_componentes]) / len(nombres_componentes) if nombres_componentes else 0
         
         return {
-            "apellidos": apellidos,
-            "nombres": nombres,
-            "confianza_apellidos": apellidos_confianza,
-            "confianza_nombres": nombres_confianza
+            "apellidos": apellidos.strip(),
+            "nombres": nombres.strip(),
+            "confianza_apellidos": confianza_apellidos,
+            "confianza_nombres": confianza_nombres
         }
     
     def procesar_numero_cedula(self, imagen_bytes: bytes):
@@ -89,7 +107,7 @@ class CedulaNacionalAntiguaOCR(BaseCedulaNacionalOCR):
         Extrae número en formato original (ej: 172193122-6)
         Guarda recorte procesado (imagen + OCR bruto en JSON)
         """
-        resultado = self.procesar_zona_con_ocr(imagen_bytes, CEDULA_ANTIGUA["zona_numero"])
+        resultado = self.procesar_zona_con_ocr(imagen_bytes, self.zonas["zona_numero"])
         
         if resultado.get("exito"):
             # Extraer número de cédula
@@ -120,7 +138,7 @@ class CedulaNacionalAntiguaOCR(BaseCedulaNacionalOCR):
         Estructura: Etiqueta → Apellidos → Nombres
         Guarda recorte procesado (imagen + OCR bruto + parsing en JSON)
         """
-        resultado = self.procesar_zona_con_ocr(imagen_bytes, CEDULA_ANTIGUA["zona_nombres_apellidos"])
+        resultado = self.procesar_zona_con_ocr(imagen_bytes, self.zonas["zona_nombres_apellidos"])
         
         if resultado.get("exito"):
             # Extraer componentes OCR
